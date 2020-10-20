@@ -1,0 +1,107 @@
+---
+title: "SISAL Data Extract"
+author: "Janica Bühler"
+date: "15 Oktober 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(plyr)
+library(dplyr)
+library(tidyverse)
+#knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r SISAL 20-21k, message=FALSE, warning=FALSE}
+source("Functions/SISAL_extracting.R")
+
+for(year in seq(from = 80000, to = 1000, by = -1000)){
+  data <- load_sisal_data(year_start = year, year_stop = year-1000, min_period = 600, min_dating = 2, min_d18O = 15)
+  
+  df <- tibble(
+    site_id = data[[1]]$site_id,
+    entity_id = data[[1]]$entity_id,
+    latitude = data[[1]]$latitude,
+    longitude = data[[1]]$longitude
+  )
+  
+  #tibble::tibble(test = list(zoo::zoo(1:10), zoo::zoo(1:10)))
+
+  list_d18O <- list()
+  list_d13C <- list()
+  
+  for(ii in 1:length(data[[1]]$entity_id)){
+    entity = data[[1]]$entity_id[ii]
+    data_rec <- data[[2]] %>% filter(entity_id == entity)
+    list_d18O[[ii]] = zoo::zoo(x = data_rec$d18O_measurement, order.by = data_rec$interp_age)
+    list_d13C[[ii]] = zoo::zoo(x = data_rec$d13C_measurement, order.by = data_rec$interp_age)
+  }
+  
+  df$d18O <- list_d18O
+  df$d13C<- list_d13C
+  
+  save(df, file = paste0("SISAL_data_",year/1000,"kyBP-",year/1000-1,"kyBP.RData"))
+  
+}
+
+```
+
+Now in a next step, create a matrix with 18x80 where each element contains a list of the variance
+
+```{r}
+
+var_matrix_mean <- array(dim = c(18,80))
+var_matrix_number <- array(dim = c(18,80))
+lats = seq(from = -80, to = 90, by = 10)
+years  = seq(from = 80000, to = 1000, by = -1000)
+for(year_num in 1:80){
+  year = years[year_num]
+  load(paste0("SISAL_data_",year/1000,"kyBP-",year/1000-1,"kyBP.RData"))
+  for(lat_num in 1:18){
+    lat = lats[lat_num]
+    data <- df %>% filter(df$latitude<lat & df$latitude>(lat-10))
+    if(is_empty(data$entity_id)){
+      next
+    }
+    var_list <- list()
+    for(ii in 1:length(data$entity_id)){
+      var_list = c(var_list, var(data$d18O[[ii]]))
+    }
+    var_matrix_mean[lat_num, year_num] = mean(as.numeric(var_list), na.rm = TRUE)
+    var_matrix_number[lat_num, year_num] = length(as.numeric(var_list))
+  }
+}
+
+rownames(var_matrix_mean) <- lats
+colnames(var_matrix_mean) <- years
+
+```
+
+
+
+## Plot the Matrix
+
+```{r pressure, echo=FALSE}
+fields::image.plot(t(var_matrix_mean), main = "Variance of speleothem records", axes = FALSE, col = rev(RColorBrewer::brewer.pal('RdBu', n = 9)))
+axis(1, at=seq(0,1,0.125), labels=seq(80,0,-10))
+axis(2, at=seq(0,1,1/18), labels=seq(-90,90,10))
+abline(h = 0)
+mtext("years BP", side = 1, line = 2)
+mtext("latitude", side = 2, line = 2)
+fields::image.plot(t(var_matrix_number), main = "Number of Records in calculation", axes = FALSE, col = RColorBrewer::brewer.pal('Reds', n = 9))
+#image(t(var_matrix_mean))
+axis(1, at=seq(0,1,0.125), labels=seq(80,0,-10))
+axis(2, at=seq(0,1,1/18), labels=seq(-90,90,10))
+mtext("years BP", side = 1, line = 2)
+mtext("latitude", side = 2, line = 2)
+```
+```{r}
+median(var_matrix_mean, na.rm = T)
+```
+
