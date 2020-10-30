@@ -12,8 +12,8 @@ library(tidyverse)
 
 load_sisal_data <- function(prefix = "", year_start, year_stop, min_period, min_dating, min_d18O){
   prefix = ""
-  #path = "/stacywork/ginnyweasley/02_SISAL/SISAL_v2/"
-  path = "/home/ginnyweasley/Dokumente/01_Promotion/06_Daten/02_SISAL/SISAL_v2/"
+  path = "/stacywork/ginnyweasley/02_SISAL/SISAL_v2/"
+  #path = "/home/ginnyweasley/Dokumente/01_Promotion/06_Daten/02_SISAL/SISAL_v2/"
   composite_link_entity <- read.csv(paste(path, prefix,'composite_link_entity.csv',sep = ''), header = T,stringsAsFactors = F)
   d13C <- read.csv(paste(path, prefix,'d13c.csv',sep='') ,header = T, stringsAsFactors = F)
   d13C <- plyr::rename(d13C, c("iso_std" = "iso_std_d13C"))

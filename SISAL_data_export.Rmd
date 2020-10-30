@@ -12,11 +12,7 @@ library(tidyverse)
 #knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## Extract Data
 
 ```{r SISAL 20-21k, message=FALSE, warning=FALSE}
 source("Functions/SISAL_extracting.R")
@@ -62,7 +58,7 @@ lats = seq(from = -80, to = 90, by = 10)
 years  = seq(from = 80000, to = 1000, by = -1000)
 for(year_num in 1:80){
   year = years[year_num]
-  load(paste0("SISAL_data_",year/1000,"kyBP-",year/1000-1,"kyBP.RData"))
+  load(paste0("Data/SISAL_data_",year/1000,"kyBP-",year/1000-1,"kyBP.RData"))
   for(lat_num in 1:18){
     lat = lats[lat_num]
     data <- df %>% filter(df$latitude<lat & df$latitude>(lat-10))
