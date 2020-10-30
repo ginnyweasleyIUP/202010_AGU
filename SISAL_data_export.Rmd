@@ -62,7 +62,7 @@ lats = seq(from = -80, to = 90, by = 10)
 years  = seq(from = 80000, to = 1000, by = -1000)
 for(year_num in 1:80){
   year = years[year_num]
-  load(paste0("SISAL_data_",year/1000,"kyBP-",year/1000-1,"kyBP.RData"))
+  load(paste0("Data/SISAL_data_",year/1000,"kyBP-",year/1000-1,"kyBP.RData"))
   for(lat_num in 1:18){
     lat = lats[lat_num]
     data <- df %>% filter(df$latitude<lat & df$latitude>(lat-10))
@@ -88,6 +88,7 @@ colnames(var_matrix_mean) <- years
 ## Plot the Matrix
 
 ```{r pressure, echo=FALSE}
+pdf(file = "AGU_Speleo_imageplots.pdf", width = 7, height = 4)
 fields::image.plot(t(var_matrix_mean), main = "Variance of speleothem records", axes = FALSE, col = rev(RColorBrewer::brewer.pal('RdBu', n = 9)))
 axis(1, at=seq(0,1,0.125), labels=seq(80,0,-10))
 axis(2, at=seq(0,1,1/18), labels=seq(-90,90,10))
@@ -100,8 +101,42 @@ axis(1, at=seq(0,1,0.125), labels=seq(80,0,-10))
 axis(2, at=seq(0,1,1/18), labels=seq(-90,90,10))
 mtext("years BP", side = 1, line = 2)
 mtext("latitude", side = 2, line = 2)
+dev.off()
 ```
 ```{r}
 median(var_matrix_mean, na.rm = T)
 ```
+
+
+Neu: Suche alle die zwischen 14700 und 73500 BP mind. 3 datings haben, mind. 3000 jahre abdecken, und mind. 30 d18O measurements haben und exportiere alle
+```{r warning=FALSE}
+source("Functions/SISAL_extracting.R")
+
+data <- load_sisal_data(year_start = 73500, year_stop = 14700, min_period = 2000, min_dating = 3, min_d18O = 30)
+  
+df <- tibble(
+  site_id = data[[1]]$site_id,
+  entity_id = data[[1]]$entity_id,
+  latitude = data[[1]]$latitude,
+  longitude = data[[1]]$longitude
+)
+
+list_d18O <- list()
+list_d13C <- list()
+  
+for(ii in 1:length(data[[1]]$entity_id)){
+  entity = data[[1]]$entity_id[ii]
+  data_rec <- data[[2]] %>% filter(entity_id == entity)
+  list_d18O[[ii]] = zoo::zoo(x = data_rec$d18O_measurement, order.by = data_rec$interp_age)
+  list_d13C[[ii]] = zoo::zoo(x = data_rec$d13C_measurement, order.by = data_rec$interp_age)
+}
+  
+df$d18O <- list_d18O
+df$d13C<- list_d13C
+  
+save(df, file = paste0("Data/SISAL_data_73.5kyBP-14.7kyBP.RData"))
+  
+
+```
+
 
